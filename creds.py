@@ -1,7 +1,0 @@
-login_info = 'mysql+pymysql://pharm27:Ami7into@data.mdlzsupply.com/osadata'
-CONSUMER_KEY = '1qYz2cCn4kYa1VL33DrM4VUNq'
-CONSUMER_SECRET = 'OgBnm5xpe7ptfqwsyZe8jscUWk4kZGbXC0DQ1Vtv7LI0Aoa5Wj'
-ACCESS_KEY = '4063957228-vgLcuwFuW8RMVhr87ukRN6sPE6m7M1vKYtJyzyd'
-ACCESS_SECRET = 'y6ky1kUnKbJUdBAcSKlXQpKMkBSbxoJHyDvYrtwmQwhrz'
-username = 'mdlzosa@gmail.com'
-password = 'osa1337!'
