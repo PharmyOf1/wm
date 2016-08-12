@@ -14,7 +14,7 @@ from sqlalchemy.sql import table, column, select, update, insert
 
 import tweepy, random
 
-import tinify_files, creds
+import tinify_files, creds, time
 
 login_info = creds.login_info
 
@@ -50,12 +50,12 @@ class Connect_To_Server(object):
 
     def upload_record(self, record_type, table_data):
     	self.record_type = record_type
+    	print ('\n----------Uploading {}----------\n'.format(self.record_type))
     	correct_table, table_data = self.table_selector(table_data)
-    	print ('\n----------Uploading {}'.format(self.record_type))
     	#bulk insert - must be same structure everytime
     	self.connection.execute(correct_table.insert(), table_data)
     	FM.add_to_loaded_files(ROQ.file_name)
-    	print ('Record Updated')
+    	print ('\n~~Record Updated~~\n')
 
 
     def table_selector(self,table_data):
@@ -129,6 +129,9 @@ class Connect_To_Email(object):
 
 			if subject in zip_subjects:
 				self.get_zip()
+			elif any(['waste' in subject,'Waste' in subject]):
+				pass
+
 			else:
 				self.get_attachment()
 
@@ -183,7 +186,7 @@ class Connect_To_Email(object):
 
 class NameManagement(object):
 	def __init__(self):
-		self.exclusion_list = ['Waste']
+		self.exclusion_list = ['Waste','waste']
 
 	def only_new_files(self):
 		for x in os.walk(path_with_files):
@@ -198,11 +201,15 @@ class NameManagement(object):
 		with open(os.path.join(detach_dir,'loaded_files.txt')) as f:
 			already_uploaded = set([x.strip('\n') for x in f.readlines()])
 			files_in_dir = set(files)
+			for f in files_in_dir:
+				if f in already_uploaded:
+					os.remove(os.path.join(root,f))
+
 			self.files_to_upload = (files_in_dir - already_uploaded)
 			full_paths = [os.path.join(root,file) for file in self.files_to_upload if file.endswith('.xlsx') or file.endswith('.csv')]
 
 			#Remove using keyword exclusions
-			full_paths = [x for x in full_paths if any(y in x for y in self.exclusion_list)]
+			full_paths = [x for x in full_paths if not any(y in x for y in self.exclusion_list)]
 
 			return full_paths
 
@@ -223,6 +230,7 @@ class Twitter(object):
 		self.api = tweepy.API(auth)
 
 if __name__ == "__main__":
+	tic = time.clock()
 #=-=-=-=-=-=Set Constants-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	this_path = os.path.dirname(os.path.realpath(__file__))
 	path_with_files = os.path.join(this_path, 'attachments')
@@ -240,18 +248,20 @@ if __name__ == "__main__":
 		ROQ = File_Data(data_file)
 		roq_data = ROQ.create_rows()
 		record_type = ROQ.file_name
-		OSA_Connect.upload_record(record_type,roq_data)
+		OSA_Connect.upload_record(str(data_file),roq_data)
 		try:
 			os.remove(data_file)
 		except:
 			print ('Failed to remove file, pls remove manually')
 #=-=-=-=-=-=End Connections-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#=-=-=-=-=-=Tweet Out Success-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+	toc = time.clock()
 	try:
+		tweet.api.update_status('Process Ran: {} New Files. Duration: {}'.format(len(new_files),toc-tic))
 		GMAIL.end_connection()
 		OSA_Connect.close()
-	except: pass
-#=-=-=-=-=-=Tweet Out Success-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-	try:
-		tweet.api.update_status('Process Ran: {} New Files').format(len(new_files))
+
 	except:
-		tweet.api.update_status('Error in process: {}').format(random.randint(0,100))
+		tweet.api.update_status('Error in process: {}'.format(random.randint(0,100)))
+
+

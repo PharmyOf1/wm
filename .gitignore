@@ -1,3 +1,4 @@
 *.pyc
 creds.py
 creds~.py
+*.csv
