@@ -26,7 +26,7 @@ class File_Data(object):
 
 	def create_rows(self):
 		if self.fx in ('.csv'):
-			csv.register_dialect('pipes', delimiter='|')
+			csv.register_dialect('pipes', delimiter=',')
 			with open(self.file_name,'r') as f:
 				reader = csv.reader(f, dialect='pipes')
 				rows = list(reader)
@@ -183,7 +183,7 @@ class Connect_To_Email(object):
 
 class NameManagement(object):
 	def __init__(self):
-		pass
+		self.exclusion_list = ['Waste']
 
 	def only_new_files(self):
 		for x in os.walk(path_with_files):
@@ -201,7 +201,8 @@ class NameManagement(object):
 			self.files_to_upload = (files_in_dir - already_uploaded)
 			full_paths = [os.path.join(root,file) for file in self.files_to_upload if file.endswith('.xlsx') or file.endswith('.csv')]
 
-			#Call module here to break up files
+			#Remove using keyword exclusions
+			full_paths = [x for x in full_paths if any(y in x for y in self.exclusion_list)]
 
 			return full_paths
 
@@ -227,11 +228,11 @@ if __name__ == "__main__":
 	path_with_files = os.path.join(this_path, 'attachments')
 	detach_dir = os.path.join(this_path, 'attachments')
 #=-=-=-=-=-=Construct Connection Instances-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-	#GMAIL = Connect_To_Email()
+	GMAIL = Connect_To_Email()
 	OSA_Connect = Connect_To_Server(login_info)
 	tweet = Twitter()
 # #=-=-=-=-=-=Stream Files-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-	#GMAIL.pull_files()
+	GMAIL.pull_files()
 #-=-=-=-=-=Loop Files For Upload-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 	FM = NameManagement()
 	new_files = FM.only_new_files()
@@ -240,13 +241,15 @@ if __name__ == "__main__":
 		roq_data = ROQ.create_rows()
 		record_type = ROQ.file_name
 		OSA_Connect.upload_record(record_type,roq_data)
-		#try:
-			#os.remove(data_file)
-		#except:
-			#print ('Failed to remove file, pls remove manually')
+		try:
+			os.remove(data_file)
+		except:
+			print ('Failed to remove file, pls remove manually')
 #=-=-=-=-=-=End Connections-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-	#GMAIL.end_connection()
-	OSA_Connect.close()
+	try:
+		GMAIL.end_connection()
+		OSA_Connect.close()
+	except: pass
 #=-=-=-=-=-=Tweet Out Success-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	try:
 		tweet.api.update_status('Process Ran: {} New Files').format(len(new_files))
