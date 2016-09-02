@@ -59,7 +59,8 @@ class Connect_To_Server(object):
 
 
     def table_selector(self,table_data):
-    	if 'CAO' in self.record_type:
+    	if '- NEW - CAO pilot store OSA' in self.record_type: #Pilot File
+    		print ('\nSelecting CAO Pilot Database')
     		dbTable = 'WM_OSA_CAO_PILOT'
     		table_data=table_data[4:]
     		table_data = [{
@@ -76,7 +77,28 @@ class Connect_To_Server(object):
     			  'Lost Sales Qty':x[10],
     			  'Lost Sales':x[11]
     									} for x in table_data] 
-    	else:
+    	elif 'Waste' in self.record_type:
+    		print ('\nSelecting Waste Database')
+    		dbTable = 'WASTE_WM'
+    		table_data=table_data[4:]
+    		table_data = [{
+    			  'indicator':x[0],
+    			  'fiscal_week':x[1],
+    			  'distribution_channel':x[2],
+    			  'billing_doc_date':x[3],
+    			  'sales_document':x[4],
+    			  'billing_document':x[5],
+    			  'billing_type':x[6],
+    			  'billing_description':x[7],
+    			  'plant':x[8],
+    			  'gr_doll':x[9],
+    			  'net_doll':x[10],
+    			  'inv_qty':x[11],
+    			  'uom':x[12],
+    									} for x in table_data]
+
+    	elif 'Sales - WM - Top Items With OSA - NEW -' in self.record_type:
+    		print ('\nSelecting OSA WM Database')
     		dbTable = 'WM_TOP_ITEMS_WITH_OSA'
     		table_data=table_data[4:]
     		table_data = [{
@@ -95,7 +117,11 @@ class Connect_To_Server(object):
     			  'POS Qty Avg':x[12],
     			  'Lost Sales Qty':x[13],
     			  'Lost Sales':x[14]
-    									} for x in table_data] 
+    									} for x in table_data]
+
+    	else:
+    		print ('\nNo DB Selected')
+    		dbTable = None     									 
     	
     	correct_table = schema.Table(dbTable, self.meta, autoload=True)
     	return correct_table, table_data
@@ -186,17 +212,17 @@ class Connect_To_Email(object):
 
 class NameManagement(object):
 	def __init__(self):
-		self.exclusion_list = ['Waste','waste']
+		self.exclusion_list = ['NOTHING']
 
 	def only_new_files(self):
 		for x in os.walk(path_with_files):
 			root, dirs, files = x
 		
 		#Break up files
-		tinify_files.create_multiple_files(files,path_with_files)
+		# tinify_files.create_multiple_files(files,path_with_files)
 
-		for x in os.walk(path_with_files):
-			root, dirs, files = x
+		# for x in os.walk(path_with_files):
+		# 	root, dirs, files = x
 
 		with open(os.path.join(detach_dir,'loaded_files.txt')) as f:
 			already_uploaded = set([x.strip('\n') for x in f.readlines()])
@@ -210,7 +236,7 @@ class NameManagement(object):
 
 			#Remove using keyword exclusions
 			full_paths = [x for x in full_paths if not any(y in x for y in self.exclusion_list)]
-
+			print ('Located {} new files to upload.'.format(len(full_paths)))
 			return full_paths
 
 	def add_to_loaded_files(self,file_name):
@@ -265,3 +291,14 @@ if __name__ == "__main__":
 		tweet.api.update_status('Error in process: {}'.format(random.randint(0,100)))
 
 
+#Adding files
+#1) Waste file
+	#- Larry sends it to Dave every monday
+	#- Dave will forward to MDLZOSA gmail
+
+#2) Inventory File
+#3) Order file
+#4) Laber file
+
+# Next Steps:
+# 1) Remove CAO table
